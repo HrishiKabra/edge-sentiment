@@ -1,0 +1,35 @@
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import { viteStaticCopy } from "vite-plugin-static-copy";
+
+// onnxruntime-web ships its WebAssembly binaries inside node_modules. We copy
+// them into the served asset tree under /ort/ so the runtime can fetch them at
+// `ort.env.wasm.wasmPaths = "/ort/"` (set in src/inference.ts). Without this the
+// browser would 404 on the .wasm files and inference would never initialise.
+export default defineConfig({
+  plugins: [
+    react(),
+    viteStaticCopy({
+      targets: [
+        {
+          src: "node_modules/onnxruntime-web/dist/*.wasm",
+          dest: "ort",
+        },
+      ],
+    }),
+  ],
+  // onnxruntime-web must not be pre-bundled/transformed by esbuild — it loads
+  // its own wasm glue at runtime and breaks if Vite rewrites it.
+  optimizeDeps: {
+    exclude: ["onnxruntime-web"],
+  },
+  build: {
+    target: "es2021",
+    // The INT8 model + wasm are large binaries served as-is; keep them as
+    // assets rather than inlining, and don't warn on the expected bundle size.
+    chunkSizeWarningLimit: 1500,
+  },
+  server: {
+    port: 5173,
+  },
+});
