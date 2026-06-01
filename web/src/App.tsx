@@ -99,6 +99,7 @@ export default function App() {
     } catch (err: unknown) {
       if (id === requestId.current) {
         setError(err instanceof Error ? err.message : "Inference failed");
+        setResult(null); // don't leave a stale verdict/latency above the error
       }
     } finally {
       if (id === requestId.current) setRunning(false);
@@ -173,9 +174,9 @@ export default function App() {
         {error && (
           <div className="error" role="alert">
             <strong>error</strong> {error}
-            {backend === "edge" && (
+            {backend === "edge" && /failed to fetch|networkerror|load failed/i.test(error) && (
               <span className="error__hint">
-                Set <code>VITE_WORKER_URL</code> to your deployed Worker.
+                Worker unreachable — set <code>VITE_WORKER_URL</code> to your deployed Worker.
               </span>
             )}
           </div>

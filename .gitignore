@@ -34,3 +34,6 @@ worker/assets/
 .DS_Store
 .idea/
 .vscode/
+
+# local web env overrides
+web/.env.local
