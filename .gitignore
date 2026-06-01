@@ -1,0 +1,26 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# --- Models / large binaries (trained + exported artifacts) ---
+training/models/
+training/**/checkpoints/
+*.onnx
+*.zip
+
+# --- Web ---
+web/node_modules/
+web/dist/
+web/public/model/*.onnx
+
+# --- Worker ---
+worker/node_modules/
+worker/.wrangler/
+
+# --- OS / editor ---
+.DS_Store
+.idea/
+.vscode/

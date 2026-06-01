@@ -1,0 +1,22 @@
+# EdgeSentiment training pipeline dependencies.
+# Pinned for reproducibility. Verified mutually compatible on Python 3.10/3.11
+# (Google Colab T4 ships Python 3.10/3.11). CPU export/optimize/benchmark also
+# run locally with these same pins.
+
+# --- Core deep learning ---
+torch==2.4.1
+transformers==4.44.2
+datasets==2.21.0
+accelerate==0.34.2
+evaluate==0.4.3
+
+# --- ONNX export, optimization, quantization ---
+onnx==1.16.2
+onnxruntime==1.19.2
+
+# --- Numerics / metrics ---
+numpy==1.26.4
+scikit-learn==1.5.1
+
+# --- Plotting (walkthrough.ipynb) ---
+matplotlib==3.9.2
