@@ -2,16 +2,17 @@
  * Parity test: our hand-written WordPieceTokenizer must reproduce the exact
  * `input_ids` Hugging Face's tokenizer produces, otherwise the model receives
  * the wrong tokens. Expected ids are generated from the real tokenizer in
- * `expected_tokens.json`. Run with: `node --experimental-strip-types tokenizer.test.ts`.
+ * `expected_tokens.json`. Run with: `npm test` (tsx).
  */
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
-import { WordPieceTokenizer } from "../src/tokenizer.ts";
+import { dirname, join, resolve } from "node:path";
+import { WordPieceTokenizer } from "../src/tokenizer.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
+const repoRoot = resolve(here, "..", "..");
 const vocab = readFileSync(
-  join(here, "..", "assets", "models", "distilbert-sst2", "vocab.txt"),
+  join(repoRoot, "web", "public", "models", "distilbert-sst2", "vocab.txt"),
   "utf-8",
 );
 const expected = JSON.parse(

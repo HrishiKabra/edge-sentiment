@@ -1,0 +1,21 @@
+{
+  "name": "edge-sentiment-inference-service",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Off-loaded ONNX inference service for EdgeSentiment (onnxruntime-node). The Cloudflare Worker proxies to this.",
+  "scripts": {
+    "start": "tsx src/server.ts",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx test/tokenizer.test.ts"
+  },
+  "dependencies": {
+    "onnxruntime-node": "1.19.2"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.1",
+    "tsx": "4.19.2",
+    "typescript": "5.6.3"
+  }
+}

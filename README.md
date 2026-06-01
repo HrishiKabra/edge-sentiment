@@ -14,7 +14,7 @@ Live demo: _[add your deployment URL]_
 
 Most sentiment classifiers live behind a cloud API: every keystroke a user types is shipped to a datacenter, run on a rented GPU, and shipped back. At scale that design pays three structural taxes — **latency** (a datacenter round trip is 50–200 ms before the model even runs), **cost** (GPU inference servers scale linearly with traffic), and **privacy** (user text leaves the device and the network). Edge AI removes all three by moving the model to where the user is: their browser, or a CDN point-of-presence a few miles away. The hard part is fit — a 256 MB FP32 transformer is a non-starter in a browser tab or a 128 MB Worker isolate.
 
-EdgeSentiment is the full pipeline that makes a transformer small and fast enough to deploy at the edge, end to end: fine-tune `distilbert-base-uncased` on SST-2, export to ONNX (with a verified numerical-parity check), graph-optimize and **INT8-quantize** it down to **64 MB (4× smaller, ~30% faster, no accuracy loss)**, then ship that exact same artifact to two runtimes — an in-browser WebAssembly app and a Cloudflare Worker. Every number in this README is measured, not estimated (see [`training/benchmark_results.json`](training/benchmark_results.json) and the [walkthrough notebook](training/notebooks/walkthrough.ipynb)).
+EdgeSentiment is the full pipeline that makes a transformer small and fast enough to deploy at the edge, end to end: fine-tune `distilbert-base-uncased` on SST-2, export to ONNX (with a verified numerical-parity check), graph-optimize and **INT8-quantize** it down to **64 MB (4× smaller, ~30% faster, no accuracy loss)**, then ship that exact same artifact to two deployment paths — an in-browser WebAssembly app, and a Cloudflare Worker edge gateway that fronts an off-loaded ONNX inference service. Every number in this README is measured, not estimated (see [`training/benchmark_results.json`](training/benchmark_results.json) and the [walkthrough notebook](training/notebooks/walkthrough.ipynb)).
 
 ## Architecture
 
@@ -37,12 +37,21 @@ EdgeSentiment is the full pipeline that makes a transformer small and fast enoug
                                 ┌───────────────────────────────────┴───────┐
                                 ▼                                           ▼
                    ┌─────────────────────────┐               ┌─────────────────────────┐
-                   │   BROWSER  (WebAssembly) │               │   CLOUDFLARE  (Worker)   │
-                   │  onnxruntime-web · React │               │  onnxruntime-web · TS    │
-                   │  @xenova tokenizer       │               │  WordPiece tokenizer     │
-                   │  → on-device, 0 egress   │               │  → edge POP, R2 model    │
-                   └─────────────────────────┘               └─────────────────────────┘
+                   │   BROWSER  (WebAssembly) │               │  CLOUDFLARE WORKER (TS)  │
+                   │  onnxruntime-web · React │               │  edge gateway: CORS,     │
+                   │  @xenova tokenizer       │               │  validation, logging     │
+                   │  → on-device, 0 egress   │               │  proxies ↓ to            │
+                   └─────────────────────────┘               └───────────┬─────────────┘
+                                                                         ▼
+                                                             ┌─────────────────────────┐
+                                                             │   INFERENCE SERVICE      │
+                                                             │  onnxruntime-node · TS   │
+                                                             │  WordPiece tokenizer     │
+                                                             │  runs the INT8 model     │
+                                                             └─────────────────────────┘
 ```
+
+**Why the Worker proxies instead of running the model itself:** onnxruntime-web's WebAssembly kernels can't be compiled or run inside Cloudflare's `workerd` runtime (no runtime Wasm compilation during a request, plus tight free-tier CPU/memory limits). So the Worker stays as the edge gateway — terminating requests at a Cloudflare POP, handling CORS, validation, and observability — and proxies the forward pass to a small Node service running `onnxruntime-node`, a native ONNX runtime with no such restrictions. The browser path has no such constraint and runs the model fully on-device.
 
 ## Benchmark Results
 
@@ -65,10 +74,15 @@ INT8 is **4× smaller**, **~25% faster at p50** and **~38% faster at p95**, with
 | Backend | Latency | Privacy | Cost at 1M req/day |
 |---|---|---|---|
 | **Browser (Wasm)** | ~90–130 ms, on-device | On-device, **zero egress** | **$0** (runs on the client) |
-| **Cloudflare Edge** | ~90 ms + network RTT | Leaves browser, not the datacenter | ~$0 (free tier)\* |
+| **Cloudflare Edge** | ~3–5 ms model\* + network RTT | Leaves browser, not the datacenter | Worker free tier + inference host |
 | Traditional cloud API | ~200 ms+ | Leaves device **and** datacenter | ~$50–200 (GPU/CPU servers) |
 
-\* See [Limitations](#limitations) — real BERT inference on Workers requires a paid plan to clear the free-tier CPU limit, and the model is served from R2.
+\* The off-loaded `onnxruntime-node` service runs the INT8 model natively in ~3–5 ms (measured locally) — much faster than the WebAssembly path, since it's a native runtime. End-to-end latency is dominated by network RTT to the edge POP and the Worker→service hop. See [Limitations](#limitations) for why inference is off-loaded rather than run in the Worker.
+
+<p align="center">
+  <img src="docs/edge-cloudflare.png" alt="EdgeSentiment — Cloudflare Edge backend returning a real prediction" width="560">
+  <br><sub>The <b>Cloudflare Edge</b> backend: browser → Worker gateway → onnxruntime-node service → real prediction.</sub>
+</p>
 
 ## Quick Start
 
@@ -108,16 +122,28 @@ npm install
 npm run dev          # http://localhost:5173
 ```
 
-### 4. Deploy the Cloudflare Worker
+### 4. Run the edge path (Worker + inference service)
+
+Start the inference service (runs the INT8 model via onnxruntime-node):
+
+```bash
+cd inference-service
+npm install
+npm start            # serves on http://localhost:8099
+```
+
+Then the Worker gateway, pointed at it:
 
 ```bash
 cd worker
 npm install
-# Host distilbert-sst2-int8.onnx in an R2 bucket, then set MODEL_URL in wrangler.toml
-npm run deploy       # runs copy-assets (vocab) + wrangler deploy
+echo 'INFERENCE_URL=http://localhost:8099' > .dev.vars
+npm run dev          # wrangler dev on http://localhost:8787
 ```
 
-Point the web app at your Worker by setting `VITE_WORKER_URL` (see `web/.env.example`) and toggle **Cloudflare Edge** in the UI.
+Point the web app at the Worker — `echo 'VITE_WORKER_URL=http://localhost:8787' > web/.env.local` — restart `npm run dev`, and toggle **Cloudflare Edge** in the UI to see real predictions over the full edge path.
+
+**Deploying:** `wrangler deploy` the Worker and set `INFERENCE_URL` (a `[vars]` entry or secret) to your hosted inference service — any runtime that supports ONNX works (a container, Fly.io, Render, a small VM). The service reads the model from `MODEL_PATH` (defaults to the repo's INT8 model).
 
 ## Key Technical Decisions
 
@@ -133,7 +159,7 @@ Point the web app at your Worker by setting `VITE_WORKER_URL` (see `web/.env.exa
 
 This is a sentiment classifier, and a deliberately small one. DistilBERT-on-SST-2 handles short, opinionated English text well, but it is not a general language model: sarcasm, mixed/contrastive sentiment ("the acting was great but the plot dragged"), domain-specific jargon, non-English text, and long documents all degrade accuracy. Tasks that need world knowledge, multi-sentence reasoning, or nuanced classification call for a larger model — at which point the edge-deployment math changes and a server-side model (or a small LLM) is the right tool.
 
-On the Cloudflare Worker specifically: the design is production-shaped (routing, CORS, a verified WordPiece tokenizer, R2-backed model loading, structured errors, latency logging), but **running the ONNX wasm kernels inside `workerd` is constrained** — workerd restricts runtime Wasm compilation, and a full BERT forward pass (~90 ms CPU, ~64 MB working set) exceeds the free-tier 10 ms CPU / 128 MB limits. Reliable edge inference there requires a paid plan with raised CPU limits (and likely statically-bundling the ORT Wasm). The **browser backend has no such caveat** — it runs real inference today, verified end-to-end (see `docs/`).
+On the Cloudflare edge path: the project deliberately does **not** run the ONNX model inside the Worker, because onnxruntime-web's WebAssembly kernels can't be compiled or run in Cloudflare's `workerd` runtime (no runtime Wasm compilation during a request; free-tier limits of 10 ms CPU / 128 MB are also too tight for a ~90 ms / 64 MB BERT pass). Instead the Worker is a thin edge gateway that proxies to an off-loaded `onnxruntime-node` service — the standard pattern for serving a model too heavy for an edge isolate. That service is a single point that must be hosted somewhere ONNX runs; the trade is reliability and using the project's exact fine-tuned weights, at the cost of one extra hop versus pure in-isolate inference. The **browser backend has no such dependency** — it runs the full model on-device, verified end-to-end (see `docs/`).
 
 ---
 
