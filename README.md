@@ -2,7 +2,7 @@
 
 **Real-time sentiment analysis that runs on the edge — in the browser via WebAssembly and at a Cloudflare POP — from a single INT8-quantized DistilBERT.**
 
-Live demo: _[add your deployment URL]_
+**Live demo: https://hrishikabra.github.io/edge-sentiment/** — runs entirely in your browser (first load downloads the ~64 MB model, then it's cached).
 
 <p align="center">
   <img src="docs/edge-desktop.png" alt="EdgeSentiment browser app — desktop" width="640">

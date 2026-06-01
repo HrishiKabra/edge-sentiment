@@ -41,3 +41,6 @@ inference-service/node_modules/
 
 # local web env overrides
 web/.env.local
+
+# Claude Code local tooling state
+.claude/
