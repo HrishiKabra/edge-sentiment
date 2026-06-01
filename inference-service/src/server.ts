@@ -67,6 +67,15 @@ async function handle(req: IncomingMessage, res: ServerResponse): Promise<void> 
 
   const url = new URL(req.url ?? "/", `http://localhost:${PORT}`);
 
+  if (req.method === "GET" && (url.pathname === "/" || url.pathname === "")) {
+    send(res, 200, {
+      service: "edge-sentiment-inference",
+      model: "distilbert-int8",
+      endpoints: { classify: "POST /classify { text }", health: "GET /health" },
+    });
+    return;
+  }
+
   if (req.method === "GET" && url.pathname === "/health") {
     send(res, 200, { status: "ok", model: "distilbert-int8", version: VERSION });
     return;
