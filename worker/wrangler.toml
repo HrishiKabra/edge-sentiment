@@ -9,7 +9,7 @@ compatibility_flags = ["nodejs_compat"]
 # For local `wrangler dev`, override it in worker/.dev.vars (gitignored):
 #   INFERENCE_URL=http://localhost:8099
 [vars]
-INFERENCE_URL = "https://<your-inference-service-host>"
+INFERENCE_URL = "https://hrishikabra-edge-sentiment-inference.hf.space"
 
 [observability]
 enabled = true
