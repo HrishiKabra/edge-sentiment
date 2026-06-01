@@ -7,6 +7,9 @@ import { viteStaticCopy } from "vite-plugin-static-copy";
 // `ort.env.wasm.wasmPaths = "/ort/"` (set in src/inference.ts). Without this the
 // browser would 404 on the .wasm files and inference would never initialise.
 export default defineConfig({
+  // Served from "/" in dev and locally. For GitHub Pages project sites the site
+  // lives under /<repo>/, so the deploy workflow sets BASE_PATH=/edge-sentiment/.
+  base: process.env["BASE_PATH"] ?? "/",
   plugins: [
     react(),
     viteStaticCopy({

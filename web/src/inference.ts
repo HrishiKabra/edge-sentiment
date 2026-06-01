@@ -27,7 +27,11 @@ export interface LoadResult {
   size_mb: number;
 }
 
-const MODEL_URL = "/model/distilbert-sst2-int8.onnx";
+// BASE_URL is "/" in dev and the Vite `base` (e.g. "/edge-sentiment/") in a
+// project-page build, so all asset paths must be prefixed with it to work both
+// at a domain root and under a GitHub Pages subpath.
+const BASE = import.meta.env.BASE_URL;
+const MODEL_URL = `${BASE}model/distilbert-sst2-int8.onnx`;
 const TOKENIZER_ID = "distilbert-sst2";
 const MAX_SEQ_LENGTH = 128;
 
@@ -37,7 +41,7 @@ const MAX_SEQ_LENGTH = 128;
 // threaded wasm requires SharedArrayBuffer, which requires cross-origin
 // isolation (COOP/COEP). We adapt to whatever the host grants and fall back to
 // single-threaded so the demo works on any static host (e.g. GitHub Pages).
-ort.env.wasm.wasmPaths = "/ort/";
+ort.env.wasm.wasmPaths = `${BASE}ort/`;
 ort.env.wasm.simd = true;
 ort.env.wasm.numThreads =
   typeof self !== "undefined" && self.crossOriginIsolated
@@ -48,7 +52,7 @@ ort.env.wasm.numThreads =
 // never from the Hugging Face Hub. Keeps the app self-contained and private.
 env.allowRemoteModels = false;
 env.allowLocalModels = true;
-env.localModelPath = "/models/";
+env.localModelPath = `${BASE}models/`;
 
 let sessionPromise: Promise<ort.InferenceSession> | null = null;
 let tokenizerPromise: Promise<PreTrainedTokenizer> | null = null;

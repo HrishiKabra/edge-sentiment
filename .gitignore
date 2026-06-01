@@ -18,6 +18,9 @@ training/????????-????-????-????-????????????
 web/node_modules/
 web/dist/
 web/public/model/*.onnx
+# ...except the shipped INT8 model, committed so the Pages CI build can serve it
+# (64 MB, under GitHub's 100 MB/file limit).
+!web/public/model/distilbert-sst2-int8.onnx
 *.tsbuildinfo
 
 # --- Tooling scratch ---
