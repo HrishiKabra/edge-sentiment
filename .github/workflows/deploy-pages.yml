@@ -6,6 +6,11 @@ name: Deploy web demo to GitHub Pages
 on:
   push:
     branches: [main]
+    # Only redeploy when the web app (or this workflow) changes — avoids
+    # re-uploading the 64 MB model on unrelated pushes (training/, worker/, docs).
+    paths:
+      - 'web/**'
+      - '.github/workflows/deploy-pages.yml'
   workflow_dispatch:
 
 permissions:
