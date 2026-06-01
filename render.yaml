@@ -1,0 +1,27 @@
+# Render Blueprint for the EdgeSentiment inference service.
+# Deploy: render.com → New → Blueprint → connect this repo. Render reads this
+# file and provisions the service automatically.
+#
+# The service runs the project's INT8 ONNX model via onnxruntime-node and exposes
+# POST /classify + GET /health. The Cloudflare Worker proxies to its URL.
+#
+# Notes:
+#   - The 64 MB model is committed at web/public/model/ and resolved at runtime
+#     relative to the repo root, so no extra upload is needed.
+#   - Free plan = 512 MB RAM and sleeps after ~15 min idle (first request after
+#     sleep cold-starts in ~30-60s). Fine for a demo; bump the plan to remove it.
+services:
+  - type: web
+    name: edge-sentiment-inference
+    runtime: node
+    plan: free
+    rootDir: inference-service
+    # --include=dev ensures tsx/typescript install even if Render sets
+    # NODE_ENV=production (npm ci would otherwise omit devDependencies).
+    buildCommand: npm ci --include=dev
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "20"

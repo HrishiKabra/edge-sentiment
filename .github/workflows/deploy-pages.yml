@@ -45,6 +45,9 @@ jobs:
       - run: npm run build
         env:
           BASE_PATH: /edge-sentiment/
+          # When set (repo Actions variable), enables the Cloudflare Edge backend
+          # and points it at the deployed Worker. Empty -> Edge stays disabled.
+          VITE_WORKER_URL: ${{ vars.VITE_WORKER_URL }}
 
       - uses: actions/upload-pages-artifact@v3
         with:
