@@ -1,0 +1,43 @@
+{
+  "config": {
+    "batch_size": 1,
+    "seq_len": 128,
+    "warmup_runs": 200,
+    "measured_runs": 500
+  },
+  "environment": {
+    "platform": "macOS-15.6.1-arm64-arm-64bit",
+    "processor": "arm",
+    "python": "3.12.10",
+    "onnxruntime": "1.19.2"
+  },
+  "results": [
+    {
+      "variant": "FP32",
+      "size_mb": 255.55,
+      "load_time_ms": 149.62,
+      "p50_ms": 124.55,
+      "p95_ms": 131.19,
+      "p99_ms": 147.57,
+      "mean_ms": 123.73
+    },
+    {
+      "variant": "Optimized FP32",
+      "size_mb": 255.43,
+      "load_time_ms": 149.29,
+      "p50_ms": 118.47,
+      "p95_ms": 128.86,
+      "p99_ms": 134.58,
+      "mean_ms": 120.13
+    },
+    {
+      "variant": "INT8",
+      "size_mb": 64.43,
+      "load_time_ms": 60.79,
+      "p50_ms": 88.94,
+      "p95_ms": 91.54,
+      "p99_ms": 93.23,
+      "mean_ms": 88.4
+    }
+  ]
+}

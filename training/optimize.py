@@ -31,6 +31,7 @@ import numpy as np
 import onnxruntime as ort
 from datasets import load_dataset
 from onnxruntime.quantization import QuantType, quantize_dynamic
+from onnxruntime.quantization.shape_inference import quant_pre_process
 from onnxruntime.transformers.optimizer import optimize_model
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 
@@ -65,12 +66,40 @@ def optimize_graph() -> None:
 
 
 def quantize_int8() -> None:
-    """Step 2: INT8 dynamic quantization of the optimized graph."""
+    """Step 2: INT8 dynamic quantization of the exported FP32 graph.
+
+    We quantize the *original* exported FP32 model rather than the fused
+    ``optimize_model`` output. The BERT graph fusion emits ``com.microsoft``
+    custom ops (fused Attention / LayerNorm / GELU) whose intermediate tensors
+    carry no ONNX type metadata, which breaks the dynamic quantizer's type
+    inference -- and those fused ops are not dynamically quantizable anyway, so
+    quantizing them would forfeit the size/latency win. Quantizing the plain
+    graph yields a valid INT8 model with the full ~4x weight compression.
+
+    ``quant_pre_process`` runs symbolic shape inference + graph cleanup first so
+    the quantizer sees complete type information for every tensor.
+    """
+    preprocessed = MODELS_DIR / "distilbert-sst2-preprocessed.onnx"
+    # auto_merge + guess_output_rank let symbolic shape inference reconcile the
+    # dynamic (batch/sequence) axes instead of bailing with "incomplete shape
+    # inference" on this transformer graph.
+    quant_pre_process(
+        str(FP32_PATH),
+        str(preprocessed),
+        auto_merge=True,
+        guess_output_rank=True,
+    )
+    # per_channel: a separate INT8 scale per weight output-channel rather than
+    # one scale per tensor. This recovers most of the accuracy that naive
+    # per-tensor quantization loses on transformer weights, at a negligible
+    # size cost, keeping us within the 0.5% accuracy tolerance below.
     quantize_dynamic(
-        model_input=str(OPTIMIZED_PATH),
+        model_input=str(preprocessed),
         model_output=str(INT8_PATH),
         weight_type=QuantType.QInt8,
+        per_channel=True,
     )
+    preprocessed.unlink(missing_ok=True)
     print(f"INT8-quantized model saved -> {INT8_PATH}")
 
 
