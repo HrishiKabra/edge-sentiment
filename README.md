@@ -1,5 +1,7 @@
 # EdgeSentiment
 
+[![Deploy web demo to GitHub Pages](https://github.com/HrishiKabra/edge-sentiment/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/HrishiKabra/edge-sentiment/actions/workflows/deploy-pages.yml)
+
 **Real-time sentiment analysis that runs on the edge — in the browser via WebAssembly and at a Cloudflare POP — from a single INT8-quantized DistilBERT.**
 
 **Live demo: https://hrishikabra.github.io/edge-sentiment/** — runs entirely in your browser (first load downloads the ~64 MB model, then it's cached).
