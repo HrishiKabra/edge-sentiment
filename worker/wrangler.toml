@@ -1,0 +1,25 @@
+name = "edge-sentiment"
+main = "src/index.ts"
+compatibility_date = "2026-06-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets binding — holds the small tokenizer vocab (~230 KB), fetched at
+# runtime via env.ASSETS. NOTE: Workers assets are capped at 25 MiB per file, so
+# the ~64 MiB INT8 model CANNOT live here; it is fetched from MODEL_URL below.
+[assets]
+directory = "./assets"
+binding = "ASSETS"
+
+# URL of the INT8 ONNX model in object storage. Large models belong in R2 (or a
+# CDN), not the Worker script or the assets binding. Point this at your R2 public
+# bucket, e.g. https://pub-<hash>.r2.dev/distilbert-sst2-int8.onnx
+# For local `wrangler dev`, override it in worker/.dev.vars (gitignored).
+[vars]
+MODEL_URL = "https://<your-r2-public-bucket>.r2.dev/distilbert-sst2-int8.onnx"
+
+[observability]
+enabled = true
+
+# Real BERT inference can exceed the default CPU limit; raise it on a paid plan.
+# [limits]
+# cpu_ms = 200

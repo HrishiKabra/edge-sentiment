@@ -1,0 +1,20 @@
+{
+  "name": "edge-sentiment-worker",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker edge inference endpoint for EdgeSentiment (INT8 DistilBERT).",
+  "scripts": {
+    "copy-assets": "mkdir -p assets/models/distilbert-sst2 && cp ../web/public/models/distilbert-sst2/vocab.txt assets/models/distilbert-sst2/vocab.txt",
+    "dev": "npm run copy-assets && wrangler dev",
+    "deploy": "npm run copy-assets && wrangler deploy",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "onnxruntime-web": "1.19.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "4.20241127.0",
+    "typescript": "5.6.3",
+    "wrangler": "3.91.0"
+  }
+}
