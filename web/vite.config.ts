@@ -19,9 +19,13 @@ export default defineConfig({
     }),
   ],
   // onnxruntime-web must not be pre-bundled/transformed by esbuild — it loads
-  // its own wasm glue at runtime and breaks if Vite rewrites it.
+  // its own wasm glue at runtime and breaks if Vite rewrites it. But
+  // @xenova/transformers ships a *nested* copy whose ESM crashes in the dev
+  // server unless esbuild pre-bundles it (resolving its internal module graph),
+  // so we include exactly that nested copy.
   optimizeDeps: {
     exclude: ["onnxruntime-web"],
+    include: ["@xenova/transformers > onnxruntime-web"],
   },
   build: {
     target: "es2021",
