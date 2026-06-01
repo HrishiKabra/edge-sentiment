@@ -15,29 +15,32 @@
     {
       "variant": "FP32",
       "size_mb": 255.55,
-      "load_time_ms": 149.62,
-      "p50_ms": 124.55,
-      "p95_ms": 131.19,
-      "p99_ms": 147.57,
-      "mean_ms": 123.73
+      "load_time_ms": 175.5,
+      "p50_ms": 123.5,
+      "p95_ms": 152.85,
+      "p99_ms": 155.73,
+      "mean_ms": 127.36,
+      "accuracy": 0.9036697247706422
     },
     {
       "variant": "Optimized FP32",
       "size_mb": 255.43,
-      "load_time_ms": 149.29,
-      "p50_ms": 118.47,
-      "p95_ms": 128.86,
-      "p99_ms": 134.58,
-      "mean_ms": 120.13
+      "load_time_ms": 202.1,
+      "p50_ms": 125.18,
+      "p95_ms": 134.03,
+      "p99_ms": 153.16,
+      "mean_ms": 126.22,
+      "accuracy": 0.9036697247706422
     },
     {
       "variant": "INT8",
       "size_mb": 64.43,
-      "load_time_ms": 60.79,
-      "p50_ms": 88.94,
-      "p95_ms": 91.54,
-      "p99_ms": 93.23,
-      "mean_ms": 88.4
+      "load_time_ms": 63.21,
+      "p50_ms": 92.25,
+      "p95_ms": 94.8,
+      "p99_ms": 95.41,
+      "mean_ms": 92.34,
+      "accuracy": 0.9048165137614679
     }
   ]
 }

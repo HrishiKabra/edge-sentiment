@@ -23,6 +23,7 @@ browser app always serves the latest quantized weights — no manual step.
 
 from __future__ import annotations
 
+import json
 import shutil
 from pathlib import Path
 from typing import Dict, List
@@ -40,6 +41,7 @@ MODEL_DIR: Path = MODELS_DIR / "distilbert-sst2-finetuned"
 FP32_PATH: Path = MODELS_DIR / "distilbert-sst2.onnx"
 OPTIMIZED_PATH: Path = MODELS_DIR / "distilbert-sst2-optimized.onnx"
 INT8_PATH: Path = MODELS_DIR / "distilbert-sst2-int8.onnx"
+ACCURACY_PATH: Path = Path(__file__).parent / "accuracy_results.json"
 WEB_MODEL_PATH: Path = (
     Path(__file__).parent.parent / "web" / "public" / "model" / "distilbert-sst2-int8.onnx"
 )
@@ -184,7 +186,13 @@ def check_accuracy() -> Dict[str, float]:
         f"INT8 accuracy dropped {drop * 100:.3f}%, exceeding the "
         f"{ACCURACY_TOLERANCE * 100:.1f}% tolerance."
     )
-    return {"fp32": fp32_acc, "optimized": opt_acc, "int8": int8_acc}
+
+    accuracies = {"fp32": fp32_acc, "optimized": opt_acc, "int8": int8_acc}
+    # Persist measured accuracy so benchmark.py / README / walkthrough.ipynb
+    # consume real numbers rather than hardcoded estimates.
+    ACCURACY_PATH.write_text(json.dumps(accuracies, indent=2))
+    print(f"Accuracy results written to {ACCURACY_PATH}")
+    return accuracies
 
 
 def copy_to_web() -> None:

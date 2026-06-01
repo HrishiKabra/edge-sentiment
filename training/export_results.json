@@ -1,0 +1,8 @@
+{
+  "opset_version": 14,
+  "size_mb": 255.55,
+  "num_verify_examples": 872,
+  "max_abs_logit_diff": 3.167986869812012e-05,
+  "tolerance": 0.0001,
+  "verified": true
+}

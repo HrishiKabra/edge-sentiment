@@ -17,6 +17,7 @@ Usage:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Dict, List
 
@@ -34,6 +35,7 @@ from transformers import (
 
 MODEL_DIR: Path = Path(__file__).parent / "models" / "distilbert-sst2-finetuned"
 ONNX_PATH: Path = Path(__file__).parent / "models" / "distilbert-sst2.onnx"
+EXPORT_RESULTS_PATH: Path = Path(__file__).parent / "export_results.json"
 OPSET_VERSION: int = 14
 MAX_SEQ_LENGTH: int = 128
 NUM_VERIFY_EXAMPLES: int = 1000
@@ -174,8 +176,25 @@ def main() -> None:
     model, tokenizer = load_pytorch_model()
     print(f"Exporting to ONNX (opset {OPSET_VERSION}) -> {ONNX_PATH}")
     export_to_onnx(model, tokenizer)
-    report_size()
-    verify_parity(model, tokenizer)
+    size_mb = report_size()
+    max_diff = verify_parity(model, tokenizer)
+
+    # Persist verification result so walkthrough.ipynb / README can cite the real
+    # measured parity number instead of a hardcoded value.
+    EXPORT_RESULTS_PATH.write_text(
+        json.dumps(
+            {
+                "opset_version": OPSET_VERSION,
+                "size_mb": round(size_mb, 2),
+                "num_verify_examples": min(NUM_VERIFY_EXAMPLES, 872),
+                "max_abs_logit_diff": max_diff,
+                "tolerance": TOLERANCE,
+                "verified": max_diff < TOLERANCE,
+            },
+            indent=2,
+        )
+    )
+
     print("\n" + "=" * 60)
     print("EXPORT VERIFIED")
     print("=" * 60)

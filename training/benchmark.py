@@ -34,6 +34,14 @@ import onnxruntime as ort
 
 MODELS_DIR: Path = Path(__file__).parent / "models"
 RESULTS_PATH: Path = Path(__file__).parent / "benchmark_results.json"
+ACCURACY_PATH: Path = Path(__file__).parent / "accuracy_results.json"
+
+# Maps the human-readable variant name to its key in accuracy_results.json.
+ACCURACY_KEYS: Dict[str, str] = {
+    "FP32": "fp32",
+    "Optimized FP32": "optimized",
+    "INT8": "int8",
+}
 
 SEQ_LEN: int = 128
 BATCH_SIZE: int = 1
@@ -58,6 +66,18 @@ class VariantResult:
     p95_ms: float
     p99_ms: float
     mean_ms: float
+    accuracy: float | None = None  # filled from accuracy_results.json if present
+
+
+def _load_accuracies() -> Dict[str, float]:
+    """Load per-variant SST-2 accuracy written by optimize.py (if available)."""
+    if not ACCURACY_PATH.exists():
+        print(
+            f"NOTE: {ACCURACY_PATH.name} not found; run optimize.py to record "
+            "accuracy. Benchmark will report latency/size only."
+        )
+        return {}
+    return json.loads(ACCURACY_PATH.read_text())
 
 
 def _make_inputs() -> Dict[str, np.ndarray]:
@@ -125,14 +145,15 @@ def print_table(results: List[VariantResult]) -> None:
     print("=" * 78)
     header = (
         f"{'Variant':<16}{'Size(MB)':>10}{'Load(ms)':>10}"
-        f"{'p50(ms)':>10}{'p95(ms)':>10}{'p99(ms)':>10}"
+        f"{'p50(ms)':>10}{'p95(ms)':>10}{'p99(ms)':>10}{'Acc(%)':>9}"
     )
     print(header)
     print("-" * 78)
     for r in results:
+        acc = f"{r.accuracy * 100:.2f}" if r.accuracy is not None else "n/a"
         print(
             f"{r.variant:<16}{r.size_mb:>10.2f}{r.load_time_ms:>10.2f}"
-            f"{r.p50_ms:>10.2f}{r.p95_ms:>10.2f}{r.p99_ms:>10.2f}"
+            f"{r.p50_ms:>10.2f}{r.p95_ms:>10.2f}{r.p99_ms:>10.2f}{acc:>9}"
         )
     print("=" * 78)
 
@@ -159,10 +180,13 @@ def save_results(results: List[VariantResult]) -> None:
 
 
 def main() -> None:
+    accuracies = _load_accuracies()
     results: List[VariantResult] = []
     for name, path in VARIANTS.items():
         print(f"Benchmarking {name}...")
-        results.append(benchmark_variant(name, path))
+        result = benchmark_variant(name, path)
+        result.accuracy = accuracies.get(ACCURACY_KEYS[name])
+        results.append(result)
     print_table(results)
     save_results(results)
 
