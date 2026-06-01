@@ -229,7 +229,25 @@ body {
   color: var(--text);
 }
 .backend-toggle__option:disabled {
-  cursor: default;
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+/* Toggle + helper note grouping */
+.backend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.backend__note {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+.backend__note a {
+  color: var(--chrome);
+  text-decoration: none;
+  border-bottom: 1px dotted var(--chrome);
 }
 
 .backend-toggle__dot {

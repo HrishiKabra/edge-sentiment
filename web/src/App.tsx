@@ -16,7 +16,11 @@ import { LatencyDisplay } from "./components/LatencyDisplay";
 
 const DEFAULT_TEXT = "The movie was absolutely brilliant.";
 const DEBOUNCE_MS = 300;
-const WORKER_URL = import.meta.env.VITE_WORKER_URL ?? "https://edge-sentiment.workers.dev";
+// The Cloudflare Edge backend is only usable when a Worker URL is configured
+// (VITE_WORKER_URL). The public GitHub Pages build ships without one, so the
+// Edge option is shown but disabled there; set it locally to enable the path.
+const WORKER_URL = import.meta.env.VITE_WORKER_URL ?? "";
+const EDGE_ENABLED = WORKER_URL !== "";
 
 interface EdgeResponse {
   label?: ClassifyResult["label"];
@@ -135,7 +139,26 @@ export default function App() {
           </p>
         </header>
 
-        <BackendToggle value={backend} onChange={setBackend} />
+        <div className="backend">
+          <BackendToggle
+            value={backend}
+            onChange={setBackend}
+            disabledOptions={EDGE_ENABLED ? [] : ["edge"]}
+          />
+          {!EDGE_ENABLED && (
+            <p className="backend__note">
+              Edge backend runs locally — see the{" "}
+              <a
+                href="https://github.com/HrishiKabra/edge-sentiment#4-run-the-edge-path-worker--inference-service"
+                target="_blank"
+                rel="noreferrer"
+              >
+                README
+              </a>
+              . This demo runs fully in your browser.
+            </p>
+          )}
+        </div>
 
         <label className="field">
           <span className="field__label">input text</span>

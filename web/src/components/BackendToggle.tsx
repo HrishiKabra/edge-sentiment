@@ -9,11 +9,18 @@ interface BackendToggleProps {
   value: Backend;
   onChange: (backend: Backend) => void;
   disabled?: boolean;
+  /** Individual backends to render as unavailable (e.g. Edge with no Worker). */
+  disabledOptions?: readonly Backend[];
 }
 
 const ORDER: Backend[] = ["wasm", "edge"];
 
-export function BackendToggle({ value, onChange, disabled = false }: BackendToggleProps) {
+export function BackendToggle({
+  value,
+  onChange,
+  disabled = false,
+  disabledOptions = [],
+}: BackendToggleProps) {
   const activeIndex = ORDER.indexOf(value);
 
   return (
@@ -28,21 +35,29 @@ export function BackendToggle({ value, onChange, disabled = false }: BackendTogg
         style={{ transform: `translateX(${activeIndex * 100}%)` }}
         aria-hidden="true"
       />
-      {ORDER.map((backend) => (
-        <button
-          key={backend}
-          type="button"
-          role="tab"
-          aria-selected={value === backend}
-          className="backend-toggle__option"
-          data-active={value === backend}
-          disabled={disabled}
-          onClick={() => onChange(backend)}
-        >
-          <span className="backend-toggle__dot" data-backend={backend} aria-hidden="true" />
-          {BACKEND_LABELS[backend]}
-        </button>
-      ))}
+      {ORDER.map((backend) => {
+        const optionDisabled = disabled || disabledOptions.includes(backend);
+        return (
+          <button
+            key={backend}
+            type="button"
+            role="tab"
+            aria-selected={value === backend}
+            className="backend-toggle__option"
+            data-active={value === backend}
+            disabled={optionDisabled}
+            title={
+              disabledOptions.includes(backend)
+                ? "Not deployed in this demo — runs locally (see README)"
+                : undefined
+            }
+            onClick={() => onChange(backend)}
+          >
+            <span className="backend-toggle__dot" data-backend={backend} aria-hidden="true" />
+            {BACKEND_LABELS[backend]}
+          </button>
+        );
+      })}
     </div>
   );
 }
